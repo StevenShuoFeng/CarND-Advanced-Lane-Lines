@@ -99,31 +99,36 @@ class LaneFinder:
         fitcoeff_l = np.polyfit(self.nonzero_y[allPointsIndex_l], self.nonzero_x[allPointsIndex_l], 2)
         fitcoeff_r = np.polyfit(self.nonzero_y[allPointsIndex_r], self.nonzero_x[allPointsIndex_r], 2)        
         
+        self.fitcoeff_l = fitcoeff_l
+        self.fitcoeff_r = fitcoeff_r
+        
         # ------------------------------------------------------------
         # Draw the fitted lines
-        fit_yl = np.array(range(self.sizy), np.int32)
-        fit_xl = fitcoeff_l[0]*fit_yl**2 + fitcoeff_l[1]*fit_yl**1 + fitcoeff_l[2]
-        points_l = np.stack((fit_xl, fit_yl), axis=1)
+        fit_y = np.array(range(self.sizy), np.int32)
         
-        fit_yr = np.array(range(self.sizy), np.int32)
-        fit_xr = fitcoeff_r[0]*fit_yr**2 + fitcoeff_r[1]*fit_yr**1 + fitcoeff_r[2]
-        points_r = np.stack((fit_xr, fit_yr), axis=1)
+        fit_xl = fitcoeff_l[0]*fit_y**2 + fitcoeff_l[1]*fit_y**1 + fitcoeff_l[2]
+        points_l = np.stack((fit_xl, fit_y), axis=1)
         
-        cv2.polylines(self.out_img, np.int32([points_l]),\
-                      isClosed=False, color=(255,0,0), thickness=5)
-        cv2.polylines(self.out_img, np.int32([points_r]),\
-                      isClosed=False, color=(0,0,255), thickness=5)
+        fit_xr = fitcoeff_r[0]*fit_y**2 + fitcoeff_r[1]*fit_y**1 + fitcoeff_r[2]
+        points_r = np.stack((fit_xr, fit_y), axis=1)
+        
+        cv2.polylines(self.out_img, np.int32([points_l]), isClosed=False, color=(255,0,0), thickness=5)
+        cv2.polylines(self.out_img, np.int32([points_r]), isClosed=False, color=(0,0,255), thickness=5)
         
         # ------------------------------------------------------------
         # Compute lane curvature
+        self.computeCurvature()
+        
+        
+    def computeCurvature(self):
         print(fitcoeff_l, fitcoeff_r)
-        curv_l = self.computeCurvature(fitcoeff_l, self.sizy)
-        curv_r = self.computeCurvature(fitcoeff_r, self.sizy)        
-        print('Left curvature {}, Right curvature {}'.format(curv_l, curv_r))
+        curv_l = self.computeSingleCurvature(self.fitcoeff_l, self.sizy)
+        curv_r = self.computeSingleCurvature(self.fitcoeff_r, self.sizy)        
+        print('Left curvature radius {:.1f} meter, Right curvature radius {:.1f} meter'.format(curv_l, curv_r))
                          
     
     # Input coef is in unit of pixel
-    def computeCurvature(self, coef, y_location):
+    def computeSingleCurvature(self, coef, y_location):
         
         x_meter_per_pixel = 3.7/477 # meter/pixel US lane width 3.7 meter, 394~871 in the image
         y_meter_per_pixel = 30/400 # 40 feet, 12.19meters between two dash line, 400 pixel in image
@@ -133,7 +138,7 @@ class LaneFinder:
         Y = y_location*y_meter_per_pixel
         
         curvature = (1+(2*A*Y+B)**2)**1.5 / np.absolute(2*A)
-        return curvature
+        return curvature 
     
     
     def findPointsIndex(self, xrange, yrange):
