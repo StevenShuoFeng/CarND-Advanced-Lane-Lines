@@ -168,6 +168,7 @@ def combineMasks(img):
 
 # ------------------------------------
 # Perspective transform of a rectangular
+# Selected points are hard-coded
 def computePerspective(ifPlot=False):
     
     # make a copy of image for drawing

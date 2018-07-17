@@ -32,7 +32,7 @@ class LaneFinder:
         self.HW = math.floor(self.sizy/self.num_win) # height of window
         
         for step in range(self.num_win):
-            self.y_range[step] = [self.sizy - (step+1)*self.HW, self.sizy - (step)*self.HW]
+            self.y_range[step] = [self.sizy - (step+1)*self.HW, self.sizy - (step)*self.HW - 1]
         
         self.init_proj = np.sum(img[int(self.sizy/2):, :], axis=0) # project the image into x-axis
         self.x_center_llane[0] = np.argmax(self.init_proj[:int(self.sizx/2)])
@@ -88,10 +88,8 @@ class LaneFinder:
                 xwin_r = [center_r-self.WW, center_r+self.WW]
                 
             # Draw the window boundary
-            cv2.rectangle(self.img_laneAndWindow, (xwin_l[0], ywin[0]), (xwin_l[1], ywin[1]),\
-                          color=(255,0,0), thickness=5)
-            cv2.rectangle(self.img_laneAndWindow, (xwin_r[0], ywin[0]), (xwin_r[1], ywin[1]),\
-                          color=(0,0,255), thickness=5)
+            cv2.rectangle(self.img_laneAndWindow, (xwin_l[0], ywin[0]), (xwin_l[1], ywin[1]), color=(255,0,0), thickness=5)
+            cv2.rectangle(self.img_laneAndWindow, (xwin_r[0], ywin[0]), (xwin_r[1], ywin[1]), color=(0,0,255), thickness=5)
         
         # ------------------------------------------------------------
         # Fit a second order polynomial to each side of the lane, get fitted line center
