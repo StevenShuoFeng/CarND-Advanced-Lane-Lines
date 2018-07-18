@@ -9,7 +9,7 @@ class LaneFinder:
     '''
     def __init__(self,  M, M_inv, num_window=10, width_window = 200):
         self.isInit = False
-        self.threshold_minCountToUpdateCenter = 90
+        self.threshold_minCountToUpdateCenter = 100
         
         self.num_win = num_window
         self.WW = int(width_window/2)
@@ -53,15 +53,19 @@ class LaneFinder:
 
         allPointsIndex_l = []
         allPointsIndex_r = []
+                
+        self.init_proj = np.sum(img[int(self.sizy*0.6):, :], axis=0) # project the image into x-axis
+        self.x_center_llane[0] = np.argmax(self.init_proj[:int(self.sizx/2)])
+        self.x_center_rlane[0] = np.argmax(self.init_proj[int(self.sizx/2):]) + int(self.sizx/2)
         
         # ------------------------------------------------------------
         # Loop through each window and update window center, keep all points within each window
         for step in range(self.num_win):
             # If the center of the window is -1, use previous window center
-            if self.x_center_llane[step] == -1:
+            if step > 0 and self.x_center_llane[step] == -1:
                 self.x_center_llane[step] = self.x_center_llane[step-1]                
-            if self.x_center_rlane[step] == -1:
-                self.x_center_rlane[step] = self.x_center_rlane[step-1]
+            if step > 0 and self.x_center_rlane[step] == -1:
+                self.x_center_rlane[step] = self.x_center_rlane[step-1]            
             
             # Set window ranges
             center_l = self.x_center_llane.item(step)
@@ -72,27 +76,39 @@ class LaneFinder:
             
             # Find points within current window
             pointsIndex_l = self.findPointsIndex(xwin_l, ywin)
-            pointsIndex_r = self.findPointsIndex(xwin_r, ywin)            
-            allPointsIndex_l.append(pointsIndex_l)
-            allPointsIndex_r.append(pointsIndex_r)
+            pointsIndex_r = self.findPointsIndex(xwin_r, ywin)
+                        
+            if pointsIndex_l.size > 0:
+                allPointsIndex_l.append(pointsIndex_l)
+            if pointsIndex_r.size > 0:
+                allPointsIndex_r.append(pointsIndex_r)
             
             # Update window center
             if pointsIndex_l.shape[0] > self.threshold_minCountToUpdateCenter:
                 self.x_center_llane[step] = np.mean(self.nonzero_x[pointsIndex_l][0])
-                center_l = self.x_center_llane.item(step)
-                xwin_l = [center_l-self.WW, center_l+self.WW]
-            
+            else:
+                if step > 0:
+                    self.x_center_rlane[step] = self.x_center_rlane[step-1]           
+        
             if pointsIndex_r.shape[0] > self.threshold_minCountToUpdateCenter:
                 self.x_center_rlane[step] = np.mean(self.nonzero_x[pointsIndex_r][0])
-                center_r = self.x_center_rlane.item(step)
-                xwin_r = [center_r-self.WW, center_r+self.WW]
+            else:
+                if step > 0:
+                    self.x_center_rlane[step] = self.x_center_rlane[step-1]
                 
             # Draw the window boundary
+            center_l = self.x_center_llane.item(step)
+            xwin_l = [center_l-self.WW, center_l+self.WW]
+            
+            center_r = self.x_center_rlane.item(step)
+            xwin_r = [center_r-self.WW, center_r+self.WW]
+            
             cv2.rectangle(self.img_laneAndWindow, (xwin_l[0], ywin[0]), (xwin_l[1], ywin[1]), color=(255,0,0), thickness=5)
             cv2.rectangle(self.img_laneAndWindow, (xwin_r[0], ywin[0]), (xwin_r[1], ywin[1]), color=(0,0,255), thickness=5)
         
         # ------------------------------------------------------------
         # Fit a second order polynomial to each side of the lane, get fitted line center
+
         allPointsIndex_l = np.squeeze(np.concatenate(allPointsIndex_l))
         allPointsIndex_r = np.squeeze(np.concatenate(allPointsIndex_r))
                 
@@ -146,8 +162,7 @@ class LaneFinder:
     
     def findPointsIndex(self, xrange, yrange):
         pntIndex = np.where((self.nonzero_x > xrange[0]) & (self.nonzero_x < xrange[1]) & (self.nonzero_y > yrange[0]) & (self.nonzero_y < yrange[1]))
-        return np.squeeze(np.array(pntIndex))
-    
+        return np.array(pntIndex).flatten()
     
     # 
     def findCarPosition(self, ifPrintInfo=False):
@@ -181,6 +196,8 @@ class LaneFinder:
         
     # origImg is RGB orignal image
     def drawLaneBoundaryInOrigView(self, origImg):
+        raw =  np.int32(origImg)
+        
         m = np.zeros((self.sizy, self.sizx, 3), np.float64)
         
         # Draw the fitted lines and regions in between
@@ -190,24 +207,24 @@ class LaneFinder:
         fit_xr = self.fitcoeff_r[0]*fit_y**2 + self.fitcoeff_r[1]*fit_y**1 + self.fitcoeff_r[2]
         points_r = np.stack((fit_xr, fit_y), axis=1)
         
-        cv2.polylines(m, np.int32([points_l]), isClosed=False, color=(255,0,0), thickness= 25)
-        cv2.polylines(m, np.int32([points_r]), isClosed=False, color=(0,0,255), thickness= 25)
+        cv2.polylines(m, np.int32([points_l]), isClosed=False, color=(230, 9, 238), thickness= 25)
+        cv2.polylines(m, np.int32([points_r]), isClosed=False, color=(39, 88, 202), thickness= 25)
         
         corners = np.zeros((4,2))
         corners[0:2, :] = points_l[[1, -1], :]
         corners[0:2, 0] += 5
         corners[2:4, :] = points_r[[-1, 1], :]
         corners[2:4, 0] -= 5
-        cv2.fillPoly(m, np.int32([corners]), color=(0, 230, 0))
+        cv2.fillPoly(m, np.int32([corners]), color=(149, 249, 166))
         
         # Wrap it into orignal view
         fills_origView = cv2.warpPerspective(m, self.M_inv, (self.sizx, self.sizy), flags=cv2.INTER_LINEAR)
     
         # Add two images together
-        raw = np.float64(cv2.cvtColor(origImg, cv2.COLOR_BGR2RGB)/255)
+        fills_origView = np.int32(fills_origView)
         outweighted = cv2.addWeighted(raw, 1,  fills_origView, 0.5, 0)
         
-        return outweighted
+        self.final = np.int32(outweighted)
         
     # Display info in output image
     def write_Info(self):
@@ -220,11 +237,10 @@ class LaneFinder:
         else:
             side = 'left'
         textLoca = 'Location: {:.3} m {} of center'.format(abs(self.c_shift_meter), side)
-
-        # cv2.putText(img, text, org, fontFace, fontScale, color[, thickness[, lineType[, bottomLeftOrigin]]]) → None¶
-
+        
         cv2.putText(self.final, text=textCurv, org=(40,70), fontFace=font, fontScale=1.5, color=(255,255,0), thickness=2)
         cv2.putText(self.final, text=textLoca, org=(40,120), fontFace=font, fontScale=1.5, color=(255,255,0), thickness=2)
+        self.final = np.int32(self.final)
         
     # INPUT: 
     # img should be 2D grayscale, bird-view image of lanes from combined mask
@@ -244,8 +260,10 @@ class LaneFinder:
         self.findCarPosition()
         
         # Draw lane boundary and regions in original view
-        self.final = self.drawLaneBoundaryInOrigView(origImg)
+        self.drawLaneBoundaryInOrigView(origImg)
         
         # Print information on final image
         self.write_Info()
-        return self.final
+        
+        return self.img_laneAndWindow
+#         return self.final

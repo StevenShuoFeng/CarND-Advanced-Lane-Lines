@@ -101,7 +101,7 @@ def colorChannelMask(img, thresh=[0, 255], channel='S'):
 
 def regionOfInterestMask(img):
     sizy, sizx, dummy = img.shape
-    roi = np.array([[sizx*0.4, sizy*0.45], [sizx*0.05, sizy*0.95], [sizx*0.95, sizy*0.95], [sizx*0.6, sizy*0.45]]).astype(int)
+    roi = np.array([[sizx*0.45, sizy*0.60], [sizx*0.05, sizy*0.95], [sizx*0.95, sizy*0.95], [sizx*0.55, sizy*0.60]]).astype(int)
     
     binary_mask = np.zeros((sizy, sizx))
     cv2.fillPoly(binary_mask, [roi], 1)
@@ -178,7 +178,7 @@ def computePerspective(ifPlot=False):
     
     # Four corner points of the rectangular used to map perspective
     points_orig = np.array([[312,650], [1007, 650], [720, 470], [568, 470]])
-    points_targ = np.array([[360,700], [850, 700], [850, 100], [360, 100]])
+    points_targ = np.array([[360,650], [850, 650], [850, 100], [360, 100]])
 
     # Compute the forward and reverse persepective transform matrices
     M         = cv2.getPerspectiveTransform(np.float32(points_orig), np.float32(points_targ))

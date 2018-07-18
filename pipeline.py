@@ -44,7 +44,10 @@ class PipeLine:
         mask_bird = cv2.warpPerspective(np.float64(tmp), self.M, (mask.shape[1], mask.shape[0]), flags=cv2.INTER_LINEAR)
         
         # Run the lane finder process with includes:
-        # 1. Find lane lines with sliding window; 2. Fit the lane line coefficients; 3. Compute curvature; 4. Mark image with lane lines/regions and display info as text;
+        # 1. Find lane lines with sliding window;
+        # 2. Fit the lane line coefficients;
+        # 3. Compute curvature;
+        # 4. Mark image with lane lines/regions and display info as text;
         res = self.laneFinderObj.run(img, mask_bird)
         
         return res
