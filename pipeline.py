@@ -4,6 +4,8 @@ import cv2
 from calibration_mask import *
 from laneFinder import LaneFinder
 
+from thresholder import *
+
 import matplotlib.pyplot as plt
 
 class PipeLine:
@@ -39,9 +41,13 @@ class PipeLine:
         img_undist = cv2.undistort(img, self.distortionMtx, self.distortionDist, None, self.distortionMtx)
     
         # Compute the  final combined mask
-        mask = combineMasks(img_undist)
-        tmp = mask
-        mask_bird = cv2.warpPerspective(np.float64(tmp), self.M, (mask.shape[1], mask.shape[0]), flags=cv2.INTER_LINEAR)
+#         mask = combineMasks(img_undist)
+#         mask = maskGradientOnS(img_undist)
+    
+        thObj = Thresholder()
+        mask = thObj.threshold(img)
+        
+        mask_bird = cv2.warpPerspective(np.float64(mask), self.M, (mask.shape[1], mask.shape[0]), flags=cv2.INTER_LINEAR)
         
         # Run the lane finder process with includes:
         # 1. Find lane lines with sliding window;

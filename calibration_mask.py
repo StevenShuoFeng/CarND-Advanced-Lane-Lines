@@ -101,7 +101,7 @@ def colorChannelMask(img, thresh=[0, 255], channel='S'):
 
 def regionOfInterestMask(img):
     sizy, sizx, dummy = img.shape
-    roi = np.array([[sizx*0.45, sizy*0.60], [sizx*0.05, sizy*0.95], [sizx*0.95, sizy*0.95], [sizx*0.55, sizy*0.60]]).astype(int)
+    roi = np.array([[sizx*0.45, sizy*0.6], [sizx*0.05, sizy*0.95], [sizx*0.95, sizy*0.95], [sizx*0.55, sizy*0.6]]).astype(int)
     
     binary_mask = np.zeros((sizy, sizx))
     cv2.fillPoly(binary_mask, [roi], 1)
@@ -136,6 +136,22 @@ def findAllMasks(img):
     }
     
     return allMasks
+
+def maskGradientOnS(img):
+    
+    # S-channel
+    s_mask = colorChannelMask(img, thresh=[100, 255], channel='S')
+    s_mask = np.float64(s_mask)
+    
+    rg_mask = np.array((img[:,:,1] > 150) & (img[:,:,2] > 150), np.float64)
+    
+    # Mask with Region of Interest
+    roi_mask = regionOfInterestMask(img)
+    
+    final = cv2.bitwise_and(s_mask, roi_mask)
+#     final = cv2.bitwise_and(final, rg_mask)
+    
+    return  rg_mask
 
 
 # ------------------------------------
