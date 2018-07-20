@@ -15,13 +15,15 @@ class LaneFinder:
         self.WW = int(width_window/2)
         self.HW = 0
         
-        self.x_center_llane = -1*np.ones((num_window, 1), np.int32)
-        self.x_center_rlane = -1*np.ones((num_window, 1), np.int32)
+        self.x_center_llane = -1*np.ones((num_window), np.int32)
+        self.x_center_rlane = -1*np.ones((num_window), np.int32)
         
         self.y_range = np.zeros((num_window, 2), np.int32)
         
         self.M = M
         self.M_inv = M_inv
+        
+        self.laneWidth = 850-360 # num of pixels between lane lines in bird-view
 
     ''' 
     Run for the first time, check the center of each left and right lane and assign it to the first (lowest) window
@@ -37,29 +39,29 @@ class LaneFinder:
         self.init_proj = np.sum(img[int(self.sizy/2):, :], axis=0) # project the image into x-axis
         self.x_center_llane[0] = np.argmax(self.init_proj[:int(self.sizx/2)])
         self.x_center_rlane[0] = np.argmax(self.init_proj[int(self.sizx/2):]) + int(self.sizx/2)
-        print('Initial Lane Centers: left = {}, right = {}'.format(self.x_center_llane.item(0),  self.x_center_rlane.item(0)))
+        print('Initial Lane Centers: left = {}, right = {}'.format(self.x_center_llane[0],  self.x_center_rlane[0]))
 
         self.isInit = True
     
     '''
     '''
-    def fitWindowCenter(self, img):        
+    def fitWindowCenter(self, mask):        
         # new 3-channel mask for drawing
-        self.img_laneAndWindow = np.dstack((img, img, img))*255
+        self.mask_laneAndWindow = np.dstack((mask, mask, mask))*255
         
         # current non-zero coordinates
-        self.nonzero_x = np.where(img>0)[1]
-        self.nonzero_y = np.where(img>0)[0] 
+        self.nonzero_x = np.where(mask>0)[1]
+        self.nonzero_y = np.where(mask>0)[0] 
 
         allPointsIndex_l = []
         allPointsIndex_r = []
                 
-        self.init_proj = np.sum(img[int(self.sizy*0.6):, :], axis=0) # project the image into x-axis
+        self.init_proj = np.sum(mask[int(self.sizy*0.6):, :], axis=0) # project the image into x-axis
         self.x_center_llane[0] = np.argmax(self.init_proj[:int(self.sizx/2)])
         self.x_center_rlane[0] = np.argmax(self.init_proj[int(self.sizx/2):]) + int(self.sizx/2)
         
         # ------------------------------------------------------------
-        # Loop through each window and update window center, keep all points within each window
+        # Loop through each window (from bottom to up) and update window center, keep all points within each window
         for step in range(self.num_win):
             # If the center of the window is -1, use previous window center
             if step > 0 and self.x_center_llane[step] == -1:
@@ -83,18 +85,17 @@ class LaneFinder:
             if pointsIndex_r.size > 0:
                 allPointsIndex_r.append(pointsIndex_r)
             
-            # Update window center
-            if pointsIndex_l.shape[0] > self.threshold_minCountToUpdateCenter:
-                self.x_center_llane[step] = np.mean(self.nonzero_x[pointsIndex_l][0])
-            else:
-                if step > 0:
-                    self.x_center_rlane[step] = self.x_center_rlane[step-1]           
+            # Update window center if there're enough points within, otherwise use same location as the lower window
+            if pointsIndex_l.size > self.threshold_minCountToUpdateCenter:
+                self.x_center_llane[step] = np.mean(self.nonzero_x[pointsIndex_l])
+                # print(self.nonzero_x[pointsIndex_l][0].shape)
+            elif step > 0:
+                self.x_center_rlane[step] = self.x_center_rlane[step-1]           
         
-            if pointsIndex_r.shape[0] > self.threshold_minCountToUpdateCenter:
-                self.x_center_rlane[step] = np.mean(self.nonzero_x[pointsIndex_r][0])
-            else:
-                if step > 0:
-                    self.x_center_rlane[step] = self.x_center_rlane[step-1]
+            if pointsIndex_r.size > self.threshold_minCountToUpdateCenter:
+                self.x_center_rlane[step] = np.mean(self.nonzero_x[pointsIndex_r])
+            elif step > 0:
+                self.x_center_rlane[step] = self.x_center_rlane[step-1]
                 
             # Draw the window boundary
             center_l = self.x_center_llane.item(step)
@@ -103,8 +104,8 @@ class LaneFinder:
             center_r = self.x_center_rlane.item(step)
             xwin_r = [center_r-self.WW, center_r+self.WW]
             
-            cv2.rectangle(self.img_laneAndWindow, (xwin_l[0], ywin[0]), (xwin_l[1], ywin[1]), color=(255,0,0), thickness=5)
-            cv2.rectangle(self.img_laneAndWindow, (xwin_r[0], ywin[0]), (xwin_r[1], ywin[1]), color=(0,0,255), thickness=5)
+            cv2.rectangle(self.mask_laneAndWindow, (xwin_l[0], ywin[0]), (xwin_l[1], ywin[1]), color=(255,0,0), thickness=5)
+            cv2.rectangle(self.mask_laneAndWindow, (xwin_r[0], ywin[0]), (xwin_r[1], ywin[1]), color=(0,0,255), thickness=5)
         
         # ------------------------------------------------------------
         # Fit a second order polynomial to each side of the lane, get fitted line center
@@ -128,8 +129,8 @@ class LaneFinder:
         fit_xr = fitcoeff_r[0]*fit_y**2 + fitcoeff_r[1]*fit_y**1 + fitcoeff_r[2]
         points_r = np.stack((fit_xr, fit_y), axis=1)
         
-        cv2.polylines(self.img_laneAndWindow, np.int32([points_l]), isClosed=False, color=(255,0,0), thickness=5)
-        cv2.polylines(self.img_laneAndWindow, np.int32([points_r]), isClosed=False, color=(0,0,255), thickness=5)
+        cv2.polylines(self.mask_laneAndWindow, np.int32([points_l]), isClosed=False, color=(255,0,0), thickness=5)
+        cv2.polylines(self.mask_laneAndWindow, np.int32([points_r]), isClosed=False, color=(0,0,255), thickness=5)
         
         # ------------------------------------------------------------
         # Compute lane curvature
@@ -164,18 +165,19 @@ class LaneFinder:
         pntIndex = np.where((self.nonzero_x > xrange[0]) & (self.nonzero_x < xrange[1]) & (self.nonzero_y > yrange[0]) & (self.nonzero_y < yrange[1]))
         return np.array(pntIndex).flatten()
     
-    # 
+    # Mark the starting point (bottom) of each lane line, mask the points and map back to original view
+    # Then measure the lane center location relative to the center of image as shift in position
     def findCarPosition(self, ifPrintInfo=False):
         m = np.zeros((self.sizy, self.sizx), np.int32)
-        y = self.sizy - 10
+        y = self.sizy - 40
         x_l = self.fitcoeff_l[0]*y**2 + self.fitcoeff_l[1]*y**1 + self.fitcoeff_l[2]
         x_l = np.int32(x_l)
         x_r = self.fitcoeff_r[0]*y**2 + self.fitcoeff_r[1]*y**1 + self.fitcoeff_r[2]
         x_r =  np.int32(x_r)
-        
+
         # Set the lane line start points in the bird view
-        m[y, x_l] = 1
-        m[y, x_r] = 1
+        m[y, x_l] = 255
+        m[y, x_r] = 255
         
         # map this mask to orignal view
         m_orig = cv2.warpPerspective(np.float64(m), self.M_inv, (self.sizx, self.sizy), flags=cv2.INTER_LINEAR)
@@ -186,13 +188,13 @@ class LaneFinder:
         center_r = np.median(nonzero_x[nonzero_x > self.sizx/2])
         
         # calculate car location
-        ratio = 3.7/(center_r-center_l) # meter/pixel (3.7 meter lane width)
+        ratio = 370/(center_r-center_l) # meter/pixel (3.7 meter lane width)
         c_shift_pixel = (center_l+center_r)/2 - self.sizx/2
-        self.c_shift_meter = c_shift_pixel*ratio
+        self.c_shift_cm = c_shift_pixel*ratio
         
         if ifPrintInfo:
             print('line start pixel index : l {}, r {}'.format(center_l, center_r))
-            print('lane center shifts:  {:.1f} pixels, or {:.3f} meters'.format(c_shift_pixel, self.c_shift_meter))
+            print('lane center shifts:  {:.1f} pixels, or {:.3f} meters'.format(c_shift_pixel, self.c_shift_cm))
         
     # origImg is RGB orignal image
     def drawLaneBoundaryInOrigView(self, origImg):
@@ -227,17 +229,15 @@ class LaneFinder:
         self.final = np.int32(outweighted)
         
     # Display info in output image
-    def write_Info(self):
-        font = cv2.FONT_HERSHEY_DUPLEX
-        
-        textCurv = 'Radius (curvature): {:.2f} m'.format(self.curv)
-        
-        if self.c_shift_meter > 0:
+    def write_Info(self):        
+        if self.c_shift_cm > 0:
             side = 'right'
         else:
             side = 'left'
-        textLoca = 'Location: {:.3} m {} of center'.format(abs(self.c_shift_meter), side)
+        textCurv = 'Radius (curvature): {:.2f} m'.format(self.curv)        
+        textLoca = 'Location: {:.3} cm {} of center'.format(abs(self.c_shift_cm), side)
         
+        font = cv2.FONT_HERSHEY_DUPLEX
         cv2.putText(self.final, text=textCurv, org=(40,70), fontFace=font, fontScale=1.5, color=(255,255,0), thickness=2)
         cv2.putText(self.final, text=textLoca, org=(40,120), fontFace=font, fontScale=1.5, color=(255,255,0), thickness=2)
         self.final = np.int32(self.final)
@@ -265,5 +265,5 @@ class LaneFinder:
         # Print information on final image
         self.write_Info()
         
-        return self.img_laneAndWindow
-#         return self.final
+#         return self.mask_laneAndWindow
+        return self.final

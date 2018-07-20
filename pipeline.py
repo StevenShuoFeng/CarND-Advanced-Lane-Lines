@@ -40,10 +40,6 @@ class PipeLine:
         # Fix lens distortion
         img_undist = cv2.undistort(img, self.distortionMtx, self.distortionDist, None, self.distortionMtx)
     
-        # Compute the  final combined mask
-#         mask = combineMasks(img_undist)
-#         mask = maskGradientOnS(img_undist)
-    
         thObj = Thresholder()
         mask = thObj.threshold(img)
         
