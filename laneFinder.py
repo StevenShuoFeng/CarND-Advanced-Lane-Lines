@@ -7,7 +7,7 @@ class LaneFinder:
     '''
     Initialize the window size and allocate size for window coordinates etc
     '''
-    def __init__(self,  M, M_inv, num_window=10, width_window = 200):
+    def __init__(self,  M, M_inv, num_window=10, width_window = 150):
         self.isInit = False
         self.threshold_minCountToUpdateCenter = 100
         
@@ -125,8 +125,8 @@ class LaneFinder:
         points_l = np.stack((fit_xl, y_draw), axis=1).astype(np.int32)
         points_r = np.stack((fit_xr, y_draw), axis=1).astype(np.int32)
         
-        cv2.polylines(self.mask_laneAndWindow, [points_l], isClosed=False, color=(255,0,0), thickness=5)
-        cv2.polylines(self.mask_laneAndWindow, [points_r], isClosed=False, color=(0,0,255), thickness=5)
+        cv2.polylines(self.mask_laneAndWindow, [points_l], isClosed=False, color=(255,0,0), thickness=4)
+        cv2.polylines(self.mask_laneAndWindow, [points_r], isClosed=False, color=(0,0,255), thickness=4)
         
         
     # Fit the curve coefficients together for one set of coefficients, this enforce the fixed width fact
@@ -224,24 +224,26 @@ class LaneFinder:
         points_l = np.stack((fit_xl, fit_y), axis=1)
         points_r = np.stack((fit_xr, fit_y), axis=1)
 
-        cv2.polylines(m, np.int32([points_l]), isClosed=False, color=(230, 9, 238), thickness= 25)
-        cv2.polylines(m, np.int32([points_r]), isClosed=False, color=(39, 88, 202), thickness= 25)
+        cv2.polylines(m, np.int32([points_l]), isClosed=False, color=(255, 0, 0), thickness= 25)
+        cv2.polylines(m, np.int32([points_r]), isClosed=False, color=(0, 0, 255), thickness= 25)
         
-        corners = np.zeros((4,2))
-        corners[0:2, :] = points_l[[1, -1], :]
-        corners[0:2, 0] += 5
-        corners[2:4, :] = points_r[[-1, 1], :]
-        corners[2:4, 0] -= 5
+        # corners = np.zeros((4,2))
+        # corners[0:2, :] = points_l[[1, -1], :]
+        # # corners[0:2, 0] -= 5
+        # corners[2:4, :] = points_r[[-1, 1], :]
+        # # corners[2:4, 0] += 5
+
+        corners = np.concatenate((points_l[::-1, :], points_r), axis=0)
+
         cv2.fillPoly(m, np.int32([corners]), color=(149, 249, 166))
         
         # Wrap it into orignal view
-        fills_origView = cv2.warpPerspective(m, self.M_inv, (self.sizx, self.sizy), flags=cv2.INTER_LINEAR)
+        fills_origView = cv2.warpPerspective(m, self.M_inv, (self.sizx, self.sizy), flags=cv2.INTER_LINEAR).astype(np.int32)
     
         # Add two images together
-        fills_origView = np.int32(fills_origView)
-        outweighted = cv2.addWeighted(raw, 1,  fills_origView, 0.5, 0)
+        outweighted = cv2.addWeighted(raw, 1,  fills_origView, 0.5, 0).astype(np.int32)
         
-        self.final = np.int32(outweighted)
+        self.final = outweighted
         
     # Display info in output image
     def write_Info(self):        
