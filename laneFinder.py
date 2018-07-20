@@ -23,7 +23,7 @@ class LaneFinder:
         self.M = M
         self.M_inv = M_inv
         
-        self.laneWidth = 850-360 # num of pixels between lane lines in bird-view
+        self.laneWidth = 490 # num of pixels between lane lines in bird-view
 
     ''' 
     Run for the first time, check the center of each left and right lane and assign it to the first (lowest) window
@@ -112,39 +112,55 @@ class LaneFinder:
 
         allPointsIndex_l = np.squeeze(np.concatenate(allPointsIndex_l))
         allPointsIndex_r = np.squeeze(np.concatenate(allPointsIndex_r))
-                
-        fitcoeff_l = np.polyfit(self.nonzero_y[allPointsIndex_l], self.nonzero_x[allPointsIndex_l], 2)
-        fitcoeff_r = np.polyfit(self.nonzero_y[allPointsIndex_r], self.nonzero_x[allPointsIndex_r], 2)        
         
-        self.fitcoeff_l = fitcoeff_l
-        self.fitcoeff_r = fitcoeff_r
+        self.fitFromPointsInTwoLines(allPointsIndex_l, allPointsIndex_r)
         
         # ------------------------------------------------------------
         # Draw the fitted lines
-        fit_y = np.array(range(self.sizy), np.int32)
+        y_draw = np.array(range(self.sizy), np.int32)
+
+        fit_xl = self.getXcoordFromYCoord(y_draw, 'l')
+        fit_xr = self.getXcoordFromYCoord(y_draw, 'r')
+
+        points_l = np.stack((fit_xl, y_draw), axis=1).astype(np.int32)
+        points_r = np.stack((fit_xr, y_draw), axis=1).astype(np.int32)
         
-        fit_xl = fitcoeff_l[0]*fit_y**2 + fitcoeff_l[1]*fit_y**1 + fitcoeff_l[2]
-        points_l = np.stack((fit_xl, fit_y), axis=1)
+        cv2.polylines(self.mask_laneAndWindow, [points_l], isClosed=False, color=(255,0,0), thickness=5)
+        cv2.polylines(self.mask_laneAndWindow, [points_r], isClosed=False, color=(0,0,255), thickness=5)
         
-        fit_xr = fitcoeff_r[0]*fit_y**2 + fitcoeff_r[1]*fit_y**1 + fitcoeff_r[2]
-        points_r = np.stack((fit_xr, fit_y), axis=1)
         
-        cv2.polylines(self.mask_laneAndWindow, np.int32([points_l]), isClosed=False, color=(255,0,0), thickness=5)
-        cv2.polylines(self.mask_laneAndWindow, np.int32([points_r]), isClosed=False, color=(0,0,255), thickness=5)
-        
-        # ------------------------------------------------------------
-        # Compute lane curvature
-        self.computeCurvature()
-        
+    # Fit the curve coefficients together for one set of coefficients, this enforce the fixed width fact
+    # Shift the points from the left line to the right by half of the lane width, and shift points from right line to the left
+    def fitFromPointsInTwoLines(self, indexOfNonZero_l, indexOfNonZero_r):
+        x_l = self.nonzero_x[indexOfNonZero_l] + int(self.laneWidth/2)
+        y_l = self.nonzero_y[indexOfNonZero_l]
+
+        x_r = self.nonzero_x[indexOfNonZero_r] - int(self.laneWidth/2)
+        y_r = self.nonzero_y[indexOfNonZero_r]
+
+        x_coord = np.concatenate((x_l, x_r), axis=0)
+        y_coord = np.concatenate((y_l, y_r), axis=0)
+                
+        self.fitcoeff = np.polyfit(y_coord, x_coord, 2)
+
+
+    def getXcoordFromYCoord(self, y, side='l'):
+        fit_x = self.fitcoeff[0]*y**2 + self.fitcoeff[1]*y**1 + self.fitcoeff[2]
+
+        if side == 'l':
+            fit_x = fit_x - (self.laneWidth)/2
+        else:
+            fit_x = fit_x + (self.laneWidth)/2
+
+        return fit_x
+
         
     def computeCurvature(self, ifPrintInfo=False):
         # Compute curvature at the bottom of the view
-        curv_l = self.computeSingleCurvature(self.fitcoeff_l, self.sizy)
-        curv_r = self.computeSingleCurvature(self.fitcoeff_r, self.sizy)
-        if ifPrintInfo:
-            print('Left curvature radius {:.1f} meter, Right curvature radius {:.1f} meter'.format(curv_l, curv_r))
+        self.curv = self.computeSingleCurvature(self.fitcoeff, self.sizy)
 
-        self.curv = (curv_l + curv_r)/2
+        if ifPrintInfo:
+            print('Curvature radius {:.1f} meter'.format(self.curv))
     
     # Input coef is in unit of pixel
     def computeSingleCurvature(self, coef, y_location):
@@ -170,10 +186,8 @@ class LaneFinder:
     def findCarPosition(self, ifPrintInfo=False):
         m = np.zeros((self.sizy, self.sizx), np.int32)
         y = self.sizy - 40
-        x_l = self.fitcoeff_l[0]*y**2 + self.fitcoeff_l[1]*y**1 + self.fitcoeff_l[2]
-        x_l = np.int32(x_l)
-        x_r = self.fitcoeff_r[0]*y**2 + self.fitcoeff_r[1]*y**1 + self.fitcoeff_r[2]
-        x_r =  np.int32(x_r)
+        x_l = self.getXcoordFromYCoord(y, 'l').astype(np.int32)
+        x_r = self.getXcoordFromYCoord(y, 'r').astype(np.int32)
 
         # Set the lane line start points in the bird view
         m[y, x_l] = 255
@@ -204,11 +218,12 @@ class LaneFinder:
         
         # Draw the fitted lines and regions in between
         fit_y = np.array(range(self.sizy), np.int32)        
-        fit_xl = self.fitcoeff_l[0]*fit_y**2 + self.fitcoeff_l[1]*fit_y**1 + self.fitcoeff_l[2]
-        points_l = np.stack((fit_xl, fit_y), axis=1)        
-        fit_xr = self.fitcoeff_r[0]*fit_y**2 + self.fitcoeff_r[1]*fit_y**1 + self.fitcoeff_r[2]
+        fit_xl = self.getXcoordFromYCoord(fit_y, 'l').astype(np.int32)
+        fit_xr = self.getXcoordFromYCoord(fit_y, 'r').astype(np.int32)
+
+        points_l = np.stack((fit_xl, fit_y), axis=1)
         points_r = np.stack((fit_xr, fit_y), axis=1)
-        
+
         cv2.polylines(m, np.int32([points_l]), isClosed=False, color=(230, 9, 238), thickness= 25)
         cv2.polylines(m, np.int32([points_r]), isClosed=False, color=(39, 88, 202), thickness= 25)
         
