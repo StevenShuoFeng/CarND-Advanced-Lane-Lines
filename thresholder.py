@@ -51,7 +51,7 @@ class Thresholder:
 
     def roi_thresh(self, img):
         sizy, sizx, dummy = img.shape
-        roi = np.array([[sizx*0.45, sizy*0.6], [sizx*0.05, sizy*0.95], [sizx*0.95, sizy*0.95], [sizx*0.55, sizy*0.6]]).astype(int)
+        roi = np.array([[sizx*0.45, sizy*0.6], [sizx*0.05, sizy*0.9], [sizx*0.95, sizy*0.9], [sizx*0.55, sizy*0.6]]).astype(int)
         
         roi_mask = np.zeros((sizy, sizx))
         cv2.fillPoly(roi_mask, [roi], 1)

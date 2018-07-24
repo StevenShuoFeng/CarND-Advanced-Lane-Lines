@@ -217,7 +217,7 @@ class LaneFinder:
         m = np.zeros((self.sizy, self.sizx, 3), np.float64)
         
         # Draw the fitted lines and regions in between
-        fit_y = np.array(range(self.sizy), np.int32)        
+        fit_y = np.array(range(int(self.sizy*0.2), int(self.sizy*0.9)), np.int32)        
         fit_xl = self.getXcoordFromYCoord(fit_y, 'l').astype(np.int32)
         fit_xr = self.getXcoordFromYCoord(fit_y, 'r').astype(np.int32)
 
