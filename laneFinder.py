@@ -23,7 +23,7 @@ class LaneFinder:
         self.M = M
         self.M_inv = M_inv
         
-        self.laneWidth = 510 # num of pixels between lane lines in bird-view
+        self.laneWidth = 500 # num of pixels between lane lines in bird-view
 
     ''' 
     Run for the first time, check the center of each left and right lane and assign it to the first (lowest) window
