@@ -23,7 +23,7 @@ class LaneFinder:
         self.M = M
         self.M_inv = M_inv
         
-        self.laneWidth = 500 # num of pixels between lane lines in bird-view
+        self.laneWidth = 490 # num of pixels between lane lines in bird-view
 
     ''' 
     Run for the first time, check the center of each left and right lane and assign it to the first (lowest) window
@@ -62,7 +62,7 @@ class LaneFinder:
         
         # ------------------------------------------------------------
         # Loop through each window (from bottom to up) and update window center, keep all points within each window
-        for step in range(self.num_win):
+        for step in range(int(0.7*self.num_win)):
             # If the center of the window is -1, use previous window center
             if step > 0 and self.x_center_llane[step] == -1:
                 self.x_center_llane[step] = self.x_center_llane[step-1]                
@@ -117,7 +117,7 @@ class LaneFinder:
         
         # ------------------------------------------------------------
         # Draw the fitted lines
-        y_draw = np.array(range(self.sizy), np.int32)
+        y_draw = np.array(range(int(0.7*self.sizy)), np.int32)
 
         fit_xl = self.getXcoordFromYCoord(y_draw, 'l')
         fit_xr = self.getXcoordFromYCoord(y_draw, 'r')
@@ -217,7 +217,7 @@ class LaneFinder:
         m = np.zeros((self.sizy, self.sizx, 3), np.float64)
         
         # Draw the fitted lines and regions in between
-        fit_y = np.array(range(int(self.sizy*0.2), int(self.sizy*0.9)), np.int32)        
+        fit_y = np.array(range(int(self.sizy*0.3), int(self.sizy*0.9)), np.int32)        
         fit_xl = self.getXcoordFromYCoord(fit_y, 'l').astype(np.int32)
         fit_xr = self.getXcoordFromYCoord(fit_y, 'r').astype(np.int32)
 
@@ -226,16 +226,11 @@ class LaneFinder:
 
         cv2.polylines(m, np.int32([points_l]), isClosed=False, color=(255, 0, 0), thickness= 25)
         cv2.polylines(m, np.int32([points_r]), isClosed=False, color=(0, 0, 255), thickness= 25)
-        
-        # corners = np.zeros((4,2))
-        # corners[0:2, :] = points_l[[1, -1], :]
-        # # corners[0:2, 0] -= 5
-        # corners[2:4, :] = points_r[[-1, 1], :]
-        # # corners[2:4, 0] += 5
 
-        corners = np.concatenate((points_l[::-1, :], points_r), axis=0)
 
-        cv2.fillPoly(m, np.int32([corners]), color=(149, 249, 166))
+        edges = np.concatenate((points_l[::-1, :], points_r), axis=0)
+
+        cv2.fillPoly(m, np.int32([edges]), color=(149, 249, 166))
         
         # Wrap it into orignal view
         fills_origView = cv2.warpPerspective(m, self.M_inv, (self.sizx, self.sizy), flags=cv2.INTER_LINEAR).astype(np.int32)
@@ -282,5 +277,5 @@ class LaneFinder:
         # Print information on final image
         self.write_Info()
         
-#         return self.mask_laneAndWindow
-        return self.final
+        return self.mask_laneAndWindow
+        # return self.final
