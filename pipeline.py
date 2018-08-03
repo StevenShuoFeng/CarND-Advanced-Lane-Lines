@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-from calibration_mask import *
+from calibration import *
 from laneFinder import LaneFinder
 
 from thresholder import *

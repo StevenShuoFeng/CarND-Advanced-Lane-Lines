@@ -1,7 +1,11 @@
 import numpy as np
 import cv2
 import math
-from calibration_mask import *
+
+# The LaneFinder class is responsible for :
+# 1) detecting lane edges after masking using a sliding window
+# 2) estimate the line coefficients in term of a 2nd order polynomial
+# 3) compute curvature and car locations
 
 class LaneFinder:
     '''
