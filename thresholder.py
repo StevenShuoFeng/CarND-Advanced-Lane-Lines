@@ -51,16 +51,21 @@ class Thresholder:
 
     def roi_thresh(self, img):
         sizy, sizx, dummy = img.shape
-        roi = np.array([[sizx*0.45, sizy*0.6], [sizx*0.05, sizy*0.9], [sizx*0.95, sizy*0.9], [sizx*0.55, sizy*0.6]]).astype(int)
+        roi = np.array([[sizx*0.45, sizy*0.6], [sizx*0.05, sizy*0.95], [sizx*0.95, sizy*0.95], [sizx*0.55, sizy*0.6]]).astype(int)
         
         roi_mask = np.zeros((sizy, sizx))
         cv2.fillPoly(roi_mask, [roi], 1)
         return roi_mask
 
-
-    def threshold(self, img):
+    def get_gradient(self, img):
         sobelx = cv2.Sobel(img[:, :, 2], cv2.CV_64F, 1, 0, ksize=self.sobel_kernel)
         sobely = cv2.Sobel(img[:, :, 2], cv2.CV_64F, 0, 1, ksize=self.sobel_kernel)
+
+        return sobelx, sobely
+
+
+    def threshold(self, img):
+        sobelx, sobely = self.get_gradient(img)
 
         direc = self.dir_thresh(sobelx, sobely)
         mag = self.mag_thresh(sobelx, sobely)
