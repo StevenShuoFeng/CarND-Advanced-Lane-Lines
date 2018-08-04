@@ -66,7 +66,7 @@ class LaneFinder:
         
         # ------------------------------------------------------------
         # Loop through each window (from bottom to up) and update window center, keep all points within each window
-        for step in range(int(0.7*self.num_win)):
+        for step in range(int(1*self.num_win)):
             # If the center of the window is -1, use previous window center
             if step > 0 and self.x_center_llane[step] == -1:
                 self.x_center_llane[step] = self.x_center_llane[step-1]                
@@ -254,8 +254,8 @@ class LaneFinder:
         textLoca = 'Location: {:.3} cm {} of center'.format(abs(self.c_shift_cm), side)
         
         font = cv2.FONT_HERSHEY_DUPLEX
-        cv2.putText(self.final, text=textCurv, org=(40,70), fontFace=font, fontScale=1.5, color=(255,255,0), thickness=2)
-        cv2.putText(self.final, text=textLoca, org=(40,120), fontFace=font, fontScale=1.5, color=(255,255,0), thickness=2)
+        cv2.putText(self.final, text=textCurv, org=(40,70), fontFace=font, fontScale=1.2, color=(255,255,0), thickness=2)
+        cv2.putText(self.final, text=textLoca, org=(40,120), fontFace=font, fontScale=1.2, color=(255,255,0), thickness=2)
         self.final = np.int32(self.final)
         
     # INPUT: 

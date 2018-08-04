@@ -52,5 +52,29 @@ class PipeLine:
         # 4. Mark image with lane lines/regions and display info as text;
         res = self.laneFinderObj.run(img, mask_bird)
         
-        return res
+        out = self.overlay(res, mask, self.laneFinderObj.mask_laneAndWindow)
+
+        return out
+
+
+    def overlay(self, fullimg, m1, m2):
+        sizr, sizc, dummy = fullimg.shape
+
+        # Shrink size 
+        m1 = m1[::4, ::4]
+        m2 = m2[::4, ::4, :]
+
+        sr, sc = m1.shape
+
+        for ch in range(3):
+            fullimg[0:sr, sizc-sc:sizc, ch] = m1*255
+
+        fullimg[sr:2*sr, sizc-sc:sizc, :] = m2
+
+        # Add Legend Text
+        font = cv2.FONT_HERSHEY_DUPLEX
+        cv2.putText(fullimg, text="Masked Lane Edge (Orig View)", org=(sizc-sc,10), fontFace=font, fontScale=0.5, color=(102,178,255), thickness=1)
+        cv2.putText(fullimg, text="Lane Detection (Bird View)", org=(sizc-sc,sr+10), fontFace=font, fontScale=0.5, color=(255,51,255), thickness=1)
+
+        return fullimg
         
