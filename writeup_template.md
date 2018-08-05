@@ -1,6 +1,6 @@
-## Writeup Template
+## Advanced Lane Detection
 
-### You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
+### Shuo Feng
 
 ---
 
@@ -18,6 +18,17 @@ The goals / steps of this project are the following:
 * Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
 
 [//]: # (Image References)
+
+[img1]: ./output_images/writeup/chessboard.png 
+[img2]: ./output_images/writeup/distortion.png 
+[img3]: ./output_images/writeup/masks.png 
+[img4]: ./output_images/writeup/edgetwoviews.png 
+[img5]: ./output_images/writeup/masks.png 
+[img6]: ./output_images/writeup/finalMask.png 
+[img7]: ./output_images/writeup/perspective.png 
+[img8]: ./output_images/writeup/laneInOrigView.png 
+[img9]: ./output_images/writeup/final.png 
+[video]: ./videos/project_video_output.mp4 
 
 [image1]: ./examples/undistort_output.png "Undistorted"
 [image2]: ./test_images/test1.jpg "Road Transformed"
@@ -49,7 +60,7 @@ I start by preparing "object points", which will be the (x, y, z) coordinates of
 
 I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result: 
 
-![alt text][image1]
+![alt text][img1]
 
 ### Pipeline (single images)
 
