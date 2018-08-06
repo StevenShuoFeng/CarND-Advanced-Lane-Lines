@@ -40,9 +40,9 @@ class PipeLine:
         # Fix lens distortion
         img_undist = cv2.undistort(img, self.distortionMtx, self.distortionDist, None, self.distortionMtx)
     
+        # Generate mask for lane edges and transform to bird view
         thObj = Thresholder()
         mask = thObj.threshold(img)
-        
         mask_bird = cv2.warpPerspective(np.float64(mask), self.M, (mask.shape[1], mask.shape[0]), flags=cv2.INTER_LINEAR)
         
         # Run the lane finder process with includes:
@@ -52,6 +52,7 @@ class PipeLine:
         # 4. Mark image with lane lines/regions and display info as text;
         res = self.laneFinderObj.run(img, mask_bird)
         
+        # Add additional plot
         out = self.overlay(res, mask, self.laneFinderObj.mask_laneAndWindow)
 
         return out

@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 
+# Reference from https://github.com/sumitbinnani/CarND-Advanced-Lane-Lines/blob/master/utils/thresholding.py
 
 class Thresholder:
     def __init__(self):
