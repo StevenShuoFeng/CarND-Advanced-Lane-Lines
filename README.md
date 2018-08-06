@@ -33,11 +33,15 @@ The goals / steps of this project are the following:
 
 
 ### Here's the code structure. All source codes are under the root directory.
-├── P4_playground.ipynb
-├── calibration.py
-├── laneFinder.py
-├── pipeline.py
-├── thresholder.py
+|-- P4_playground.ipynb
+
+|-- calibration.py
+
+|-- laneFinder.py
+
+|-- pipeline.py
+
+|-- thresholder.py
 
  [P4_playground.ipynb](https://github.com/StevenShuoFeng/CarND-Advanced-Lane-Lines/blob/master/P4_playground.ipynb) is the playground of the whole pipeline and more.
 
@@ -249,4 +253,3 @@ Here's the final processed video [file](https://github.com/StevenShuoFeng/CarND-
 
 -- During the lane edge detection and the polynomial fitting, more than frequent, the two edges are not parallel. This is mainly because that one of the edges have much less points in it and the polynomials can go wide. I finally decided to combine the points from two edges together fitting and this generates much more stable results.
 
- 
