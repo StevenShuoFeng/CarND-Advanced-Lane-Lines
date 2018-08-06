@@ -239,9 +239,8 @@ As additional reference, the mask result and the lane detection windows are add 
 ---
 
 ### Pipeline (video)
-![alt text][video]
 
-Here's the final processed video [file](https://github.com/StevenShuoFeng/CarND-Advanced-Lane-Lines/blob/master/videos/project_video_output.mp4) and [youtube link](https://www.youtube.com/watch?v=VmKGCWJCwug).
+Here's the final processed video [file](https://github.com/StevenShuoFeng/CarND-Advanced-Lane-Lines/blob/master/videos/project_video_output.mp4) and [youtube link](https://www.youtube.com/watch?v=RMWPVAgkINY).
 
 ---
 
