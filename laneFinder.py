@@ -170,7 +170,7 @@ class LaneFinder:
     def computeSingleCurvature(self, coef, y_location):
         
         x_meter_per_pixel = 3.7/477 # meter/pixel US lane width 3.7 meter, 394~871 in the image
-        y_meter_per_pixel = 30/400 # 40 feet, 12.19meters between two dash line, 400 pixel in image
+        y_meter_per_pixel = 20/720 # 40 feet, 12.19meters between two dash line, 400 pixel in image
         
         # Map unit of coefficients and locaiton from pixel to meter
         A = x_meter_per_pixel / (y_meter_per_pixel**2) * coef[0]
