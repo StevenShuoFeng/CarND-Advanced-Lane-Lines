@@ -205,9 +205,9 @@ class LaneFinder:
         center_l = np.median(nonzero_x[nonzero_x < self.sizx/2])
         center_r = np.median(nonzero_x[nonzero_x > self.sizx/2])
         
-        # calculate car location
         ratio = 370/(center_r-center_l) # meter/pixel (3.7 meter lane width)
-        c_shift_pixel = (center_l+center_r)/2 - self.sizx/2
+        # Shift of center of the car (image center) relative to center of lane
+        c_shift_pixel = self.sizx/2 - (center_l+center_r)/2 
         self.c_shift_cm = c_shift_pixel*ratio
         
         if ifPrintInfo:
